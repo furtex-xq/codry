@@ -200,6 +200,8 @@
           cls.assignments.forEach((a) => { p[a.course] = p[a.course] || doneIdx(m.progress, a.course); });
           return { name: m.name, xp: m.xp, streak: streakOf(m.days, m.frozen), p, when: m.days.slice().sort().pop() || '' };
         });
+        // Бал класу в лізі класів = сума тижневого XP учнів.
+        try { await C.cloud.setClassScore(cls.code, members.reduce((a, m) => a + (m.weekXP || 0), 0)); } catch (e) { /* */ }
       } else {
         rows = Object.values(cls.students || {}).map((r) => ({ name: r.n, xp: r.xp || 0, streak: r.s || 0, p: r.p || {}, when: r.t ? C.dateKey(new Date(r.t)) : '' }));
       }
@@ -278,8 +280,25 @@
             ${pct < 100 ? `<a class="btn ghost sm" href="#/learn/${c.id}/${target + 1}">${C.icon('play', 14)} ${T('Продовжити', 'Продолжить', 'Continue')}</a>` : ''}</div></div>`;
         }).join('') : `<p class="muted">${T('Учитель ще не додав завдань.', 'Учитель ещё не добавил заданий.', 'No assignments yet.')}</p>`}
       </div>`).join('') : ''}
+      ${mine.length ? `<div class="card" data-reveal id="leagueBox"><div class="card-label">${C.icon('trophy', 16)} ${T('Ліга класів', 'Лига классов', 'Class league')}</div>
+        ${cloudOn() ? `<div class="empty">${T('Завантаження…', 'Загрузка…', 'Loading…')}</div>` : `<p class="muted">${T('Класи змагаються за суму XP учнів за тиждень. Ліга запрацює, коли сайт підключать до хмари (Firebase) і ти увійдеш в акаунт.', 'Классы соревнуются за сумму XP учеников за неделю. Лига заработает, когда сайт подключат к облаку (Firebase) и ты войдёшь в аккаунт.', 'Classes compete on their students’ weekly XP. The league starts once the site is connected to the cloud (Firebase) and you sign in.')}</p>`}</div>` : ''}
     </div>${C.footer()}`;
     fx.reveal(C.app);
+
+    // Ліга класів і рейтинг однокласників (лише з хмарою)
+    if (mine.length && cloudOn()) (async () => {
+      const box = document.getElementById('leagueBox');
+      try {
+        const [league, ...classRanks] = await Promise.all([C.cloud.classLeague(), ...mine.filter((m) => m.cloud).slice(0, 3).map((m) => C.cloud.classMembers(m.code).then((r) => ({ m, r })))]);
+        const myCodes = new Set(mine.map((m) => m.code));
+        if (!document.body.contains(box)) return;
+        box.innerHTML = `<div class="card-label">${C.icon('trophy', 16)} ${T('Ліга класів · цей тиждень', 'Лига классов · эта неделя', 'Class league · this week')}</div>
+          ${league.length ? `<ol class="board">${league.map((c, i) => `<li class="${myCodes.has(c.code) ? 'me' : ''}"><span class="rank">${i + 1}</span><span class="name">${esc(c.name)}</span><b>${c.score} XP</b></li>`).join('')}</ol>`
+            : `<p class="muted">${T('Таблиця оновлюється, коли вчитель відкриває свій кабінет.', 'Таблица обновляется, когда учитель открывает свой кабинет.', 'The table updates when teachers open their dashboard.')}</p>`}
+          ${classRanks.map(({ m, r }) => `<div class="card-label" style="margin-top:14px">${C.icon('users', 16)} ${esc(m.name)}: ${T('рейтинг тижня', 'рейтинг недели', 'weekly ranking')}</div>
+            <ol class="board">${r.sort((a, b) => b.weekXP - a.weekXP).slice(0, 10).map((x, i) => `<li class="${x.uid === (C.cloud.user && C.cloud.user.uid) ? 'me' : ''}"><span class="rank">${i + 1}</span><span class="name">${esc(x.name)}</span><b>${x.weekXP} XP</b></li>`).join('')}</ol>`).join('')}`;
+      } catch (e) { if (box) box.innerHTML += `<p class="muted small">${esc(e.message || e)}</p>`; }
+    })();
 
     const jb = document.getElementById('joinBtn');
     if (jb) jb.onclick = async () => {

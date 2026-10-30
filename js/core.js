@@ -51,7 +51,13 @@
       level: 1,
       lastSeen: '',
       teacher: { classes: [] }, // класи, які створив учитель
-      myClasses: []             // класи, до яких приєднався учень
+      myClasses: [],            // класи, до яких приєднався учень
+      bosses: {},               // переможені боси: { 'python:1': дата }
+      pet: { fed: '', food: 70, happy: 70, name: '', calc: '', pets: {} }, // улюбленець Кодрик
+      trophies: [],             // трофеї турнірів
+      gallery: [],              // власні роботи для галереї
+      arcade: { robot: {}, turtle: {}, snake: 0 }, // зірки в іграх
+      battles: { wins: 0, losses: 0, streak: 0, best: 0 } // код-батли
     };
   }
 

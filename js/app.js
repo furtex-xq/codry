@@ -133,7 +133,7 @@
 
   // ---------- Шапка ----------
   function navItems() {
-    return [['courses', 'nav_courses', 'book'], ['daily', 'nav_daily', 'cal'], ['league', 'nav_league', 'trophy'], ['forum', 'nav_forum', 'chat'], ['playground', 'nav_playground', 'code']];
+    return [['courses', 'nav_courses', 'book'], ['arcade', 'nav_arcade', 'puzzle'], ['daily', 'nav_daily', 'cal'], ['league', 'nav_league', 'trophy'], ['forum', 'nav_forum', 'chat'], ['playground', 'nav_playground', 'code']];
   }
   function renderHeader() {
     document.documentElement.lang = S.lang;
@@ -141,7 +141,7 @@
     document.documentElement.classList.toggle('reduce-motion', !!S.settings.motion);
     const route = (location.hash || '#/').split('/')[1] || '';
     const cur = { course: 'courses', learn: 'courses' }[route] || route;
-    const more = [['class', 'nav_class', 'users'], ['teacher', 'nav_teacher', 'school'], ['reference', 'nav_reference', 'book'], ['shop', 'nav_shop', 'shop'], ['achievements', 'nav_achievements', 'medal'], ['donate', 'nav_donate', 'heart'], ['about', 'nav_about', 'info']];
+    const more = [['tournament', 'nav_tournament', 'trophy'], ['gallery', 'nav_gallery', 'sparkle'], ['pet', 'nav_pet', 'heart'], ['battle', 'nav_battle', 'bolt'], ['class', 'nav_class', 'users'], ['teacher', 'nav_teacher', 'school'], ['reference', 'nav_reference', 'book'], ['shop', 'nav_shop', 'shop'], ['achievements', 'nav_achievements', 'medal'], ['donate', 'nav_donate', 'heart'], ['about', 'nav_about', 'info']];
     document.getElementById('nav').innerHTML = navItems().map(([r, k, i]) => `<a href="#/${r}" class="${cur === r ? 'active' : ''}">${C.icon(i, 18)}<span>${t(k)}</span></a>`).join('') +
       `<div class="dropdown"><button class="nav-more ${more.some((m) => m[0] === cur) ? 'active' : ''}">${t('nav_more')} ▾</button><div class="dd-menu">${more.map(([r, k, i]) => `<a href="#/${r}">${C.icon(i, 18)} ${t(k)}</a>`).join('')}</div></div>`;
     document.getElementById('langSelect').innerHTML = window.CODRY_LANGS.map((l) => `<option value="${l.code}" ${l.code === S.lang ? 'selected' : ''}>${l.short}</option>`).join('');
@@ -169,6 +169,7 @@
     const menu = document.getElementById('avatarMenu');
     menu.innerHTML = `<div class="am-head">${C.mascot({ size: 54, mood: 'wink' })}<div><b>${esc(S.profile.name || t('you'))}</b><small>${t('level')} ${G.levelFromXP(S.xp)} · ${S.xp} XP</small></div></div>
       <a href="#/profile">${C.icon('user', 18)} ${t('nav_profile')}</a>
+      <a href="#/pet">${C.icon('heart', 18)} ${t('nav_pet')}</a>
       <a href="#/achievements">${C.icon('medal', 18)} ${t('nav_achievements')}</a>
       <a href="#/shop">${C.icon('shop', 18)} ${t('nav_shop')}</a>
       ${u ? `<button id="logoutBtn">${C.icon('logout', 18)} ${t('nav_logout')}</button>` : `<a href="#/login">${C.icon('key', 18)} ${t('nav_login')}</a>`}`;
@@ -227,7 +228,7 @@
     document.body.dataset.page = page || 'home';
     renderHeader();
     const P = C.pages;
-    const map = { '': P.home, dev: P.dev, courses: P.courses, course: P.course, learn: P.learn, daily: P.daily, league: P.league, forum: P.forum, playground: P.playground, reference: P.reference, profile: P.profile, achievements: P.achievements, shop: P.shop, about: P.about, login: P.login, class: P.class, teacher: P.teacher, join: P.join, donate: P.donate };
+    const map = { '': P.home, dev: P.dev, courses: P.courses, course: P.course, learn: P.learn, daily: P.daily, league: P.league, forum: P.forum, playground: P.playground, reference: P.reference, profile: P.profile, achievements: P.achievements, shop: P.shop, about: P.about, login: P.login, class: P.class, teacher: P.teacher, join: P.join, donate: P.donate, boss: P.boss, arcade: P.arcade, battle: P.battle, pet: P.pet, gallery: P.gallery, tournament: P.tournament };
     const fn = map[page || ''];
     app.classList.remove('page-in'); void app.offsetWidth; app.classList.add('page-in');
     if (fn) fn(a, b); else C.notFound();

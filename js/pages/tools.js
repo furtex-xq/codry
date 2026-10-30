@@ -26,7 +26,7 @@
       <div class="pg-grid" data-reveal>
         <div class="workspace solo">
           <div class="ws-bar"><span class="file-tab">${PG[lang][1]}</span>
-            <div class="ws-actions"><button class="btn ghost sm icon" id="pgFull" title="${t('fullscreen')}">${C.icon('expand', 17)}</button><button class="btn ghost sm" id="pgReset">${C.icon('reset', 15)}<span>${t('reset')}</span></button><button class="btn primary sm" id="pgRun">${C.icon('play', 15)} ${t('run')}</button></div></div>
+            <div class="ws-actions">${isWeb ? `<button class="btn ghost sm" id="pgPub">${C.icon('sparkle', 15)}<span>${tr({ uk: 'У галерею', ru: 'В галерею', en: 'To gallery' })}</span></button>` : ''}<button class="btn ghost sm icon" id="pgFull" title="${t('fullscreen')}">${C.icon('expand', 17)}</button><button class="btn ghost sm" id="pgReset">${C.icon('reset', 15)}<span>${t('reset')}</span></button><button class="btn primary sm" id="pgRun">${C.icon('play', 15)} ${t('run')}</button></div></div>
           <div class="editor-wrap"><textarea id="pgEditor"></textarea></div>
         </div>
         <div class="out solo">
@@ -56,6 +56,8 @@
     document.getElementById('pgRun').onclick = run;
     document.getElementById('pgReset').onclick = async () => { if (await fx.confirm(t('reset_confirm'))) ed.setValue(PG[lang][2]); };
     document.getElementById('pgFull').onclick = () => { document.body.classList.toggle('ws-full'); setTimeout(() => ed.refresh(), 60); };
+    const pub = document.getElementById('pgPub');
+    if (pub) pub.onclick = () => C.publishToGallery && C.publishToGallery({ type: 'html', code: ed.getValue() });
     if (isWeb) run();
     C.setCleanup(() => document.body.classList.remove('ws-full'));
   };

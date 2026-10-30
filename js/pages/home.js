@@ -88,6 +88,7 @@
           <div class="float-chip c3">${C.icon('bolt', 18)} +20 XP</div>
         </div>
       </section>
+      ${C.petWidget ? `<section class="section pet-sec">${C.petWidget()}</section>` : ""}
       <div class="marquee"><div class="marquee-track">${[...C.courses, ...C.courses, ...C.courses].map((c) => `<a href="#/course/${c.id}">${C.courseBadge(c, 30)} ${c.name}</a>`).join('')}</div></div>
       <section class="section" id="courses">
         <h2 class="section-title" data-reveal>${t('courses_title')}</h2>
@@ -167,6 +168,7 @@
     if (!c) return C.notFound();
     const pct = G.coursePct(c);
     const open = G.firstOpenIndex(c);
+    const view = C.LS.get('courseView', 'map');
     let lastCh = null;
     const items = c.steps.map((s, i) => {
       const done = G.isDone(c.id, s.id), unlocked = G.isUnlocked(c, i);
@@ -195,9 +197,15 @@
         </div>
         <div class="ch-mascot">${C.mascot({ size: 120, mood: pct === 100 ? 'proud' : pct > 0 ? 'happy' : 'wink', anim: 'float' })}</div>
       </section>
-      <ol class="step-list">${items}</ol>
+      <div class="view-switch" data-reveal><div class="seg" id="viewSeg">
+        <button data-v="map" class="${view === 'map' ? 'active' : ''}">${C.icon('map', 16)} ${tr({ uk: 'Карта', ru: 'Карта', en: 'Map' })}</button>
+        <button data-v="list" class="${view === 'list' ? 'active' : ''}">${C.icon('book', 16)} ${tr({ uk: 'Список', ru: 'Список', en: 'List' })}</button></div></div>
+      <div id="courseView">${view === 'map' ? C.courseMap(c) : `<ol class="step-list">${items}</ol>`}</div>
     </div>${C.footer()}`;
     document.getElementById('certBtn').onclick = () => C.showCertificate(c);
+    document.querySelectorAll('#viewSeg button').forEach((b) => b.onclick = () => { C.LS.set('courseView', b.dataset.v); C.pages.course(id); fx.reveal(C.app); });
+    const cur = document.querySelector('.mnode.cur');
+    if (view === 'map' && cur && G.doneCount(c) > 0) setTimeout(() => cur.scrollIntoView({ block: 'center', behavior: 'smooth' }), 500);
   };
 
   // ================= Сертифікат =================

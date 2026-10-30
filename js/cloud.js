@@ -30,10 +30,18 @@
     if (remote.league && (remote.league.tier || 0) > S.league.tier) S.league = remote.league;
     if (remote.teacher && remote.teacher.classes && !S.teacher.classes.length) S.teacher = remote.teacher;
     if (remote.myClasses && remote.myClasses.length && !S.myClasses.length) S.myClasses = remote.myClasses;
+    S.bosses = Object.assign({}, remote.bosses, S.bosses);
+    if (remote.arcade) {
+      for (const k of ['robot', 'turtle']) for (const id in remote.arcade[k] || {}) S.arcade[k][id] = Math.max(S.arcade[k][id] || 0, remote.arcade[k][id]);
+      S.arcade.snake = Math.max(S.arcade.snake || 0, remote.arcade.snake || 0);
+    }
+    S.trophies = union(S.trophies, remote.trophies);
+    if (remote.gallery && remote.gallery.length && !S.gallery.length) S.gallery = remote.gallery;
+    if (remote.pet && remote.pet.fed && (!S.pet.fed || remote.pet.fed > S.pet.fed)) S.pet = remote.pet;
     C.saveNow();
   }
   function snapshot() {
-    const keys = ['progress', 'days', 'frozen', 'freezes', 'xp', 'xpLog', 'gems', 'dailySolved', 'achievements', 'owned', 'equip', 'profile', 'league', 'stats', 'teacher', 'myClasses'];
+    const keys = ['progress', 'days', 'frozen', 'freezes', 'xp', 'xpLog', 'gems', 'dailySolved', 'achievements', 'owned', 'equip', 'profile', 'league', 'stats', 'teacher', 'myClasses', 'bosses', 'pet', 'trophies', 'gallery', 'arcade', 'battles'];
     const o = {};
     keys.forEach((k) => { o[k] = S[k]; });
     o.weekXP = C.game.weekXP();
@@ -118,9 +126,40 @@
     return Promise.all(r.docs.map(async (m) => {
       const u = await db.collection('users').doc(m.id).get();
       const x = u.exists ? u.data() : {};
-      return { uid: m.id, name: m.data().name || x.name || '?', progress: x.progress || {}, xp: x.xp || 0, days: x.days || [], frozen: x.frozen || [] };
+      return { uid: m.id, name: m.data().name || x.name || '?', progress: x.progress || {}, xp: x.xp || 0, days: x.days || [], frozen: x.frozen || [], weekXP: x.week === C.weekKey() ? x.weekXP || 0 : 0 };
     }));
   };
+
+  // ---------- Тижневі турніри ----------
+  // tournaments/{week}/entries/{uid}: { name, score, solved, color, at }
+  cloud.tourneyShared = () => !!(cfg && cloud.user);
+  cloud.saveTourney = (week, entry) => db.collection('tournaments').doc(week).collection('entries').doc(cloud.user.uid)
+    .set(Object.assign({ name: S.profile.name || cloud.user.displayName || '?', color: S.equip.color, at: Date.now() }, entry));
+  cloud.tourneyBoard = async (week) => {
+    const r = await db.collection('tournaments').doc(week).collection('entries').orderBy('score', 'desc').limit(50).get();
+    return r.docs.map((d) => Object.assign({ me: d.id === cloud.user.uid }, d.data()));
+  };
+
+  // ---------- Ліга класів ----------
+  // Учитель записує в документ класу тижневий бал (сума тижневого XP учнів).
+  cloud.setClassScore = (code, weekScore) => db.collection('classes').doc(code).set({ week: C.weekKey(), weekScore }, { merge: true });
+  cloud.classLeague = async () => {
+    const r = await db.collection('classes').where('week', '==', C.weekKey()).orderBy('weekScore', 'desc').limit(20).get();
+    return r.docs.map((d) => ({ code: d.id, name: d.data().name, score: d.data().weekScore || 0 }));
+  };
+
+  // ---------- Галерея робіт ----------
+  cloud.galleryShared = () => !!(cfg && cloud.user);
+  cloud.listGallery = async () => {
+    const r = await db.collection('gallery').orderBy('at', 'desc').limit(60).get();
+    return r.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+  };
+  cloud.addGallery = async (item) => {
+    const doc = Object.assign({}, item, { author: { name: S.profile.name || cloud.user.displayName || '?', color: S.equip.color, uid: cloud.user.uid }, at: Date.now(), likes: 0 });
+    const r = await db.collection('gallery').add(doc);
+    return r.id;
+  };
+  cloud.likeGallery = (id) => db.collection('gallery').doc(id).update({ likes: firebase.firestore.FieldValue.increment(1) });
 
   // ---------- Форум ----------
   const LOCAL_KEY = 'forum';
