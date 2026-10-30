@@ -10,7 +10,7 @@ const only = args.filter((a) => !a.startsWith('--'));
 
 const store = {};
 const ctx = {
-  window: {}, console, navigator: { language: 'uk' }, setTimeout, clearTimeout,
+  window: {}, console, navigator: { language: 'uk' }, setTimeout, clearTimeout, fetch, AbortController,
   localStorage: { getItem: (k) => store[k] ?? null, setItem: (k, v) => { store[k] = v; }, removeItem: (k) => { delete store[k]; } },
   document: { addEventListener() {}, getElementById: () => null }, matchMedia: () => ({ matches: false })
 };
@@ -37,6 +37,7 @@ function checkL(v, where) {
 
 const COMP = { python: 'cpython-3.13.8', java: 'openjdk-jdk-21+35', cpp: 'gcc-13.2.0', csharp: 'mono-6.12.0.199', go: 'go-1.23.2', lua: 'lua-5.4.7', luau: 'lua-5.4.7', sql: 'sqlite-3.46.1' };
 async function wandbox(lang, code, stdin) {
+  if (args.includes('--godbolt')) return viaGodbolt(lang, code, stdin);
   let src = code;
   if (lang === 'java') src = src.replace(/public\s+(final\s+)?class\s+/g, 'class ');
   let lastErr = "";
@@ -53,6 +54,21 @@ async function wandbox(lang, code, stdin) {
     } catch (e) { lastErr = String(e.cause || e); await new Promise((r) => setTimeout(r, 2500 * (attempt + 1))); }
   }
   return { out: "", err: "network " + lastErr };
+}
+// Той самий запасний сервер, що й на сайті (Compiler Explorer).
+async function viaGodbolt(lang, code, stdin) {
+  let src = code;
+  if (lang === 'java') src = src.replace(/public\s+(final\s+)?class\s+/g, 'class ');
+  if (lang === 'luau') src = ctx.CodryRun.luauProgram(code);
+  let lastErr = '';
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      await new Promise((r) => setTimeout(r, 400));
+      const j = await ctx.CodryRun.godbolt(lang, src, stdin);
+      return { out: (j.program_output || '').replace(/\n$/, ''), err: (j.compiler_error || '') + (j.program_error || '') };
+    } catch (e) { lastErr = String(e); await new Promise((r) => setTimeout(r, 3000 * (attempt + 1))); }
+  }
+  return { out: '', err: 'network ' + lastErr };
 }
 async function runNodeJS(code) {
   const out = [];

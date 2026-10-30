@@ -755,6 +755,76 @@ body.modal-open { overflow: hidden; }
 /* ============ Менше анімацій ============ */
 .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important; }
 .reduce-motion [data-reveal] { opacity: 1; transform: none; }
+/* ============ Підтримка (донати) ============ */
+.section-title.left { text-align: left; font-size: 1.4rem; margin: 26px 0 12px; }
+.donate-links { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 16px; }
+.donate-link { display: flex; align-items: center; gap: 12px; color: var(--text); margin: 0; transition: transform .2s var(--ease), border-color .2s; }
+.donate-link:hover { transform: translateY(-3px); border-color: #f472b6; }
+.donate-link .ic { color: #f472b6; }
+.donate-link span { margin-left: auto; color: var(--muted); }
+.crypto-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.crypto { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; margin: 0; }
+.crypto-head { display: flex; gap: 8px; align-items: center; }
+.qr { background: #fff; padding: 8px; border-radius: 12px; min-height: 164px; min-width: 164px; display: grid; place-items: center; }
+.crypto-addr { word-break: break-all; font-size: .76rem; padding: 8px; border-radius: 8px; background: var(--surface2); }
+
+/* ============ Режим учителя ============ */
+.back { display: inline-block; color: var(--muted); font-weight: 700; margin-bottom: 14px; }
+.back:hover { color: var(--text); }
+.row-gap { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.small { font-size: .86rem; }
+.tc-hero { display: flex; gap: 22px; align-items: center; margin-bottom: 22px; }
+.tc-hero .page-title { display: flex; align-items: center; gap: 10px; }
+.tc-new { display: flex; gap: 10px; align-items: flex-start; }
+.tc-new .field { flex: 1; margin: 0; }
+.tc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.tc-class { display: flex; gap: 14px; align-items: center; color: var(--text); transition: transform .2s var(--ease), border-color .2s; margin: 0; }
+.tc-class:hover { transform: translateY(-3px); border-color: var(--primary); }
+.tc-class b { display: block; font-size: 1.08rem; }
+.tc-class small { color: var(--muted); }
+.tc-class-ic { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; background: linear-gradient(135deg, #60a5fa, #2563eb); color: #fff; flex: none; }
+.tc-arrow { margin-left: auto; color: var(--muted); font-weight: 800; }
+.tc-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.tc-head .page-title { margin: 0; }
+.tc-code { text-align: center; padding: 8px 18px; border-radius: 14px; background: var(--surface); border: 1px dashed var(--primary); }
+.tc-code small { display: block; color: var(--muted); font-size: .76rem; }
+.tc-code b { font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; letter-spacing: .12em; color: #93c5fd; }
+.big-code { font-size: 1.1rem; letter-spacing: .1em; padding: 3px 10px; }
+.tc-link { display: flex; gap: 8px; }
+.tc-link input { flex: 1; min-width: 0; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: .8rem; }
+.asg-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.asg-row small { display: block; color: var(--muted); }
+.asg-form { display: grid; grid-template-columns: 2fr 1fr 1fr 1.4fr auto; gap: 10px; align-items: end; margin-top: 16px; }
+.asg-form .field { margin: 0; }
+.tc-table-wrap { overflow-x: auto; margin: 4px -4px 10px; }
+.tc-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .92rem; }
+.tc-table th, .tc-table td { padding: 9px 10px; text-align: center; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.tc-table th { font-size: .8rem; color: var(--muted); font-weight: 700; vertical-align: bottom; }
+.tc-table th small { display: block; font-weight: 500; }
+.tc-table th:first-child, .tc-table td:first-child { text-align: left; position: sticky; left: 0; background: var(--surface); }
+.tc-cell { display: inline-block; min-width: 48px; padding: 3px 8px; border-radius: 8px; font-weight: 800; font-size: .84rem; }
+.tc-cell.ok { background: color-mix(in srgb, var(--ok) 22%, transparent); color: var(--ok); }
+.tc-cell.mid { background: color-mix(in srgb, var(--warn) 20%, transparent); color: var(--warn); }
+.tc-cell.low { background: color-mix(in srgb, var(--primary) 18%, transparent); color: #93c5fd; }
+.tc-cell.zero { background: var(--surface2); color: var(--muted); }
+.tc-cell.late { background: color-mix(in srgb, var(--bad) 22%, transparent); color: var(--bad); }
+.tc-import { border-top: 1px solid var(--border); padding-top: 14px; margin-top: 8px; }
+.tc-cname { margin: 0; font-size: 1.25rem; }
+.asg-student { padding: 12px 0; border-top: 1px solid var(--border); }
+.asg-top { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
+.asg-bar { display: flex; gap: 12px; align-items: center; margin-top: 8px; }
+.asg-bar .bar { flex: 1; }
+.asg-bar small { color: var(--muted); font-weight: 700; min-width: 42px; }
+.tag.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 50%, transparent); }
+.tag.late { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 50%, transparent); }
+.report-code { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: .78rem; word-break: break-all; resize: none; margin: 10px 0 14px; }
+@media (max-width: 700px) {
+  .asg-form { grid-template-columns: 1fr 1fr; }
+  .asg-form .field:first-child, .asg-form .btn { grid-column: 1 / -1; }
+  .tc-hero { flex-direction: column; align-items: flex-start; }
+  .tc-new { flex-direction: column; align-items: stretch; }
+}
+
 @media (prefers-reduced-motion: reduce) { [data-reveal] { opacity: 1; transform: none; } .marquee-track, .bg-blobs i { animation: none; } }
 
 /* ============ Адаптивність ============ */

@@ -141,7 +141,7 @@
     document.documentElement.classList.toggle('reduce-motion', !!S.settings.motion);
     const route = (location.hash || '#/').split('/')[1] || '';
     const cur = { course: 'courses', learn: 'courses' }[route] || route;
-    const more = [['reference', 'nav_reference', 'book'], ['shop', 'nav_shop', 'shop'], ['achievements', 'nav_achievements', 'medal'], ['about', 'nav_about', 'info']];
+    const more = [['class', 'nav_class', 'users'], ['teacher', 'nav_teacher', 'school'], ['reference', 'nav_reference', 'book'], ['shop', 'nav_shop', 'shop'], ['achievements', 'nav_achievements', 'medal'], ['donate', 'nav_donate', 'heart'], ['about', 'nav_about', 'info']];
     document.getElementById('nav').innerHTML = navItems().map(([r, k, i]) => `<a href="#/${r}" class="${cur === r ? 'active' : ''}">${C.icon(i, 18)}<span>${t(k)}</span></a>`).join('') +
       `<div class="dropdown"><button class="nav-more ${more.some((m) => m[0] === cur) ? 'active' : ''}">${t('nav_more')} ▾</button><div class="dd-menu">${more.map(([r, k, i]) => `<a href="#/${r}">${C.icon(i, 18)} ${t(k)}</a>`).join('')}</div></div>`;
     document.getElementById('langSelect').innerHTML = window.CODRY_LANGS.map((l) => `<option value="${l.code}" ${l.code === S.lang ? 'selected' : ''}>${l.short}</option>`).join('');
@@ -227,7 +227,7 @@
     document.body.dataset.page = page || 'home';
     renderHeader();
     const P = C.pages;
-    const map = { '': P.home, dev: P.dev, courses: P.courses, course: P.course, learn: P.learn, daily: P.daily, league: P.league, forum: P.forum, playground: P.playground, reference: P.reference, profile: P.profile, achievements: P.achievements, shop: P.shop, about: P.about, login: P.login };
+    const map = { '': P.home, dev: P.dev, courses: P.courses, course: P.course, learn: P.learn, daily: P.daily, league: P.league, forum: P.forum, playground: P.playground, reference: P.reference, profile: P.profile, achievements: P.achievements, shop: P.shop, about: P.about, login: P.login, class: P.class, teacher: P.teacher, join: P.join, donate: P.donate };
     const fn = map[page || ''];
     app.classList.remove('page-in'); void app.offsetWidth; app.classList.add('page-in');
     if (fn) fn(a, b); else C.notFound();

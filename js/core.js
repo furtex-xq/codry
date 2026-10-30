@@ -49,7 +49,9 @@
       league: { week: '', tier: 0, lastResult: null },
       stats: { runs: 0, pgRuns: 0, quizRight: 0, firstTry: 0, hints: 0, posts: 0, examples: 0, freezesUsed: 0, bought: 0 },
       level: 1,
-      lastSeen: ''
+      lastSeen: '',
+      teacher: { classes: [] }, // класи, які створив учитель
+      myClasses: []             // класи, до яких приєднався учень
     };
   }
 
@@ -134,10 +136,13 @@
     if (ex) Object.assign(ex, c);
     else Codry.courses.push(Object.assign({ steps: [] }, c));
   };
-  Codry.steps = (id, steps) => {
+  // before — id кроку, перед яким вставити нові (щоб нові уроки йшли перед фінальними проєктами).
+  Codry.steps = (id, steps, before) => {
     let c = Codry.courses.find((x) => x.id === id);
     if (!c) { c = { id, steps: [] }; Codry.courses.push(c); }
-    c.steps.push(...steps);
+    const at = before ? c.steps.findIndex((s) => s.id === before) : -1;
+    if (at === -1) c.steps.push(...steps);
+    else c.steps.splice(at, 0, ...steps);
   };
   Codry.courseById = (id) => Codry.courses.find((c) => c.id === id);
 })();

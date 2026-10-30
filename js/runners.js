@@ -160,15 +160,133 @@
     lua: 'lua-5.4.7',
     luau: 'lua-5.4.7'
   };
+  // ================= Lua у браузері (Fengari — Lua 5.3, написана на JavaScript) =================
+  let fengariPromise = null;
+  function loadFengari() {
+    if (typeof window !== 'undefined' && window.fengari) return Promise.resolve(window.fengari);
+    if (typeof document === 'undefined' || !document.createElement) return Promise.resolve(null);
+    if (!fengariPromise) fengariPromise = new Promise((ok) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/fengari-web@0.1.4/dist/fengari-web.js';
+      s.onload = () => ok(window.fengari || null);
+      s.onerror = () => { fengariPromise = null; ok(null); };
+      setTimeout(() => ok(window.fengari || null), 15000);
+      document.head.appendChild(s);
+    });
+    return fengariPromise;
+  }
+  // Свої print / io.write / io.read: вивід збирається в рядок, ввід береться з поля stdin.
+  const LUA_IO = `local __emit, __stdin, __pos = __emit, __STDIN or "", 1
+function print(...)
+  local n, t = select("#", ...), {}
+  for i = 1, n do t[i] = tostring((select(i, ...))) end
+  __emit(table.concat(t, "\\t") .. "\\n")
+end
+local __io = {}
+function __io.write(...)
+  for i = 1, select("#", ...) do __emit(tostring((select(i, ...)))) end
+  return __io
+end
+local function __line(keep)
+  if __pos > #__stdin then return nil end
+  local e = string.find(__stdin, "\\n", __pos, true)
+  local s
+  if e then s = string.sub(__stdin, __pos, keep and e or e - 1); __pos = e + 1
+  else s = string.sub(__stdin, __pos); __pos = #__stdin + 1 end
+  return (string.gsub(s, "\\r", ""))
+end
+function __io.read(fmt, ...)
+  fmt = fmt or "l"
+  if type(fmt) == "string" then fmt = string.gsub(fmt, "^%*", "") end
+  local r
+  if fmt == "n" then
+    local s, e = string.find(__stdin, "^%s*[-+]?%d*%.?%d+[eE]?[-+]?%d*", __pos)
+    if s then r = tonumber((string.gsub(string.sub(__stdin, s, e), "%s", ""))); __pos = e + 1 end
+  elseif fmt == "a" then r = string.sub(__stdin, __pos); __pos = #__stdin + 1
+  elseif fmt == "L" then r = __line(true)
+  elseif type(fmt) == "number" then r = string.sub(__stdin, __pos, __pos + fmt - 1); __pos = __pos + fmt; if r == "" then r = nil end
+  else r = __line(false) end
+  if select("#", ...) > 0 then return r, __io.read(...) end
+  return r
+end
+function __io.lines() return function() return __line(false) end end
+__io.stdout = __io
+__io.stderr = { write = function(self, ...) for i = 1, select("#", ...) do __emit("\\0" .. tostring((select(i, ...)))) end return self end }
+io = __io
+`;
+  const LUA_IO_LINES = LUA_IO.split('\n').length - 1;
+  function runLuaLocal(F, src, stdin) {
+    const { lua, lauxlib, lualib, to_luastring } = F;
+    const L = lauxlib.luaL_newstate();
+    lualib.luaL_openlibs(L);
+    let out = '', errOut = '';
+    lua.lua_pushjsfunction(L, (Ls) => {
+      const s = lua.lua_tojsstring(Ls, 1) || '';
+      if (s[0] === '\0') errOut += s.slice(1); else out += s;
+      if (out.length > 200000) lauxlib.luaL_error(Ls, to_luastring('output limit exceeded'));
+      return 0;
+    });
+    lua.lua_setglobal(L, to_luastring('__emit'));
+    lua.lua_pushstring(L, to_luastring(stdin || ''));
+    lua.lua_setglobal(L, to_luastring('__STDIN'));
+    // Захист від нескінченних циклів: зупиняємо через 6 секунд.
+    const t0 = Date.now();
+    lua.lua_sethook(L, (Ls) => { if (Date.now() - t0 > 6000) lauxlib.luaL_error(Ls, to_luastring('time limit exceeded (infinite loop?)')); }, lua.LUA_MASKCOUNT, 10000);
+    let err = '';
+    if (lauxlib.luaL_loadbuffer(L, to_luastring(LUA_IO + src), null, to_luastring('=prog.lua')) !== lua.LUA_OK || lua.lua_pcall(L, 0, 0, 0) !== lua.LUA_OK) {
+      err = lua.lua_tojsstring(L, -1) || 'error';
+    }
+    // Номери рядків — без нашого службового коду.
+    const fix = (s) => s.replace(/prog\.lua:(\d+):/g, (m, n) => 'prog.lua:' + Math.max(1, n - LUA_IO_LINES) + ':');
+    const perr = fix(errOut) + (err ? 'lua: ' + fix(err) + '\n' : '');
+    return { program_output: out, program_error: perr, local: true };
+  }
+
+  // Запасний сервер — Compiler Explorer (godbolt.org): вмикається, якщо Wandbox недоступний.
+  const GODBOLT = {
+    java: ['java2100', 'java', ''],
+    cpp: ['g132', 'c++', '-std=gnu++17 -O1 -fdiagnostics-color=never'],
+    csharp: ['dotnet80csharpcoreclr', 'csharp', ''],
+    go: ['gl1238', 'go', ''],
+    lua: ['lua547', 'lua', ''],
+    luau: ['lua547', 'lua', '']
+  };
+  const ANSI = /\x1b\[[0-9;]*[A-Za-z]/g;
+  async function godbolt(lang, src, stdin) {
+    const [id, glang, args] = GODBOLT[lang];
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 60000);
+    try {
+      const r = await fetch(`https://godbolt.org/api/compiler/${id}/compile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ source: src, lang: glang, options: { userArguments: args, executeParameters: { args: [], stdin: stdin || '' }, compilerOptions: { executorRequest: true }, filters: { execute: true }, tools: [], libraries: [] }, allowStoreCodeDebug: false }),
+        signal: ctrl.signal
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const j = await r.json();
+      const txt = (a) => (a || []).map((x) => x.text).join('\n').replace(ANSI, '');
+      const b = j.buildResult || {};
+      if (b.code && b.code !== 0) return { compiler_error: txt(b.stderr) || txt(j.stderr) || 'Build failed' };
+      if (!j.didExecute && !txt(j.stdout)) return { compiler_error: txt(j.stderr) || txt(b.stderr) || 'Build failed' };
+      return { program_output: txt(j.stdout) + (j.stdout && j.stdout.length ? '\n' : ''), program_error: txt(j.stderr), signal: j.timedOut ? 'timeout' : '' };
+    } finally { clearTimeout(timer); }
+  }
+
   async function runRemote(lang, code, onLog, opts) {
     opts = opts || {};
     let src = code;
     if (lang === 'java') src = src.replace(/public\s+(final\s+)?class\s+/g, 'class ');
     if (lang === 'luau') src = luauProgram(code);
     let res = null, busy = false;
-    // Тимчасові збої сервера Wandbox (перевантаження контейнерів) — просто повторюємо запит.
+    // Lua і Luau виконуються прямо в браузері (Fengari); сервер — лише якщо бібліотека не завантажилась.
+    if ((lang === 'lua' || lang === 'luau') && !opts.remoteOnly) {
+      const F = await loadFengari();
+      if (F) res = runLuaLocal(F, src, opts.stdin);
+    }
+    // Тимчасові збої сервера Wandbox (перевантаження контейнерів) — повторюємо, а потім ідемо на запасний сервер.
     const transient = (s) => /OCI runtime|Resource temporarily unavailable|clone:|^Error: /i.test(s || '');
-    for (let attempt = 0; attempt < 5 && !res; attempt++) {
+    for (let attempt = 0; attempt < 2 && !res && COMPILERS[lang]; attempt++) {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 90000);
       try {
@@ -186,11 +304,14 @@
         if (!j.program_output && /OCI runtime|Resource temporarily unavailable|crun:/i.test((j.compiler_error || '') + (j.program_error || '') + (j.compiler_message || ''))) { busy = true; throw new Error('busy'); }
         res = j;
       } catch (e) {
-        if (attempt < 4) await new Promise((ok) => setTimeout(ok, 2000 * (attempt + 1)));
+        if (attempt < 1) await new Promise((ok) => setTimeout(ok, 1500));
       } finally { clearTimeout(timer); }
     }
+    for (let attempt = 0; attempt < 2 && !res && GODBOLT[lang]; attempt++) {
+      try { res = await godbolt(lang, src, opts.stdin); } catch (e) { if (attempt < 1) await new Promise((ok) => setTimeout(ok, 2000)); }
+    }
     if (!res) { onLog('error', busy ? (opts.busyText || 'Server is busy, try again in a few seconds.') : (opts.netText || 'Network error')); return; }
-    const strip = (s) => (s || '').replace(/^prog\.\w+:/gm, 'main:').replace(/\n$/, '');
+    const strip = (s) => (s || '').replace(/^(?:prog|example|<source>)(?:\.\w+)?:/gm, 'main:').replace(/(?:prog|example)\.lua:(\d+):/g, 'prog.lua:$1:').replace(/\n$/, '');
     if (res.compiler_error) onLog('error', strip(res.compiler_error));
     if (res.program_output) res.program_output.replace(/\n$/, '').split('\n').forEach((l) => onLog('log', l));
     if (res.program_error) {
@@ -497,7 +618,7 @@ function Simulator.__flush() __runUntil(math.huge) end
 function Simulator.removePlayer(p) if Players._ev.PlayerRemoving then Players._ev.PlayerRemoving:Fire(p) end p.Parent = nil end
 function typeof(v) if __typeof[v] then return __typeof[v] end local mt = getmetatable(v) if mt == Instance_mt then return "Instance" end return type(v) end`;
   function luauProgram(code) { return LUAU_SHIM + '\n' + luauToLua(code) + '\nSimulator.__flush()'; }
-  const LUAU_SHIM_LINES = LUAU_SHIM.split('\n').length + 1;
+  const LUAU_SHIM_LINES = LUAU_SHIM.split('\n').length; // рядок 1 коду учня = рядок SHIM_LINES + 1
 
   // ================= HTML / CSS перевірка =================
   function runWebCheck(html, checkFn) {
@@ -516,5 +637,5 @@ function typeof(v) if __typeof[v] then return __typeof[v] end local mt = getmeta
     });
   }
 
-  window.CodryRun = { runJS, runPython, runSQL, runRemote, runWebCheck, loadPython, loadSQL, luauToLua, luauProgram, LUAU_SHIM, COMPILERS };
+  window.CodryRun = { runJS, runPython, runSQL, runRemote, runWebCheck, loadPython, loadSQL, luauToLua, luauProgram, LUAU_SHIM, COMPILERS, godbolt, GODBOLT, runLuaLocal };
 })();

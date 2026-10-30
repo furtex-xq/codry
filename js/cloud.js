@@ -28,10 +28,12 @@
     for (const k in remote.stats || {}) S.stats[k] = Math.max(S.stats[k] || 0, remote.stats[k]);
     if (!S.profile.name && remote.profile && remote.profile.name) S.profile.name = remote.profile.name;
     if (remote.league && (remote.league.tier || 0) > S.league.tier) S.league = remote.league;
+    if (remote.teacher && remote.teacher.classes && !S.teacher.classes.length) S.teacher = remote.teacher;
+    if (remote.myClasses && remote.myClasses.length && !S.myClasses.length) S.myClasses = remote.myClasses;
     C.saveNow();
   }
   function snapshot() {
-    const keys = ['progress', 'days', 'frozen', 'freezes', 'xp', 'xpLog', 'gems', 'dailySolved', 'achievements', 'owned', 'equip', 'profile', 'league', 'stats'];
+    const keys = ['progress', 'days', 'frozen', 'freezes', 'xp', 'xpLog', 'gems', 'dailySolved', 'achievements', 'owned', 'equip', 'profile', 'league', 'stats', 'teacher', 'myClasses'];
     const o = {};
     keys.forEach((k) => { o[k] = S[k]; });
     o.weekXP = C.game.weekXP();
@@ -92,6 +94,33 @@
   cloud.signInEmail = (e, p) => auth.signInWithEmailAndPassword(e, p);
   cloud.register = (e, p) => auth.createUserWithEmailAndPassword(e, p);
   cloud.signOut = () => auth.signOut();
+
+  // ---------- Класи (режим учителя) ----------
+  // classes/{code}: { name, teacher (uid), teacherName, assignments, updated }
+  // classes/{code}/members/{uid}: { name, at }
+  cloud.classesShared = () => !!(cfg && cloud.user);
+  cloud.saveClass = async (cls) => {
+    await db.collection('classes').doc(cls.code).set({
+      name: cls.name, teacher: cloud.user.uid, teacherName: S.profile.name || cloud.user.displayName || '',
+      assignments: cls.assignments, updated: Date.now()
+    }, { merge: true });
+  };
+  cloud.deleteClass = (code) => db.collection('classes').doc(code).delete();
+  cloud.getClass = async (code) => {
+    const d = await db.collection('classes').doc(code).get();
+    return d.exists ? Object.assign({ code }, d.data()) : null;
+  };
+  cloud.joinClass = (code, name) => db.collection('classes').doc(code).collection('members').doc(cloud.user.uid).set({ name, at: Date.now() });
+  cloud.leaveClass = (code) => db.collection('classes').doc(code).collection('members').doc(cloud.user.uid).delete();
+  // Учні класу разом з їхнім прогресом (документи users доступні для читання).
+  cloud.classMembers = async (code) => {
+    const r = await db.collection('classes').doc(code).collection('members').get();
+    return Promise.all(r.docs.map(async (m) => {
+      const u = await db.collection('users').doc(m.id).get();
+      const x = u.exists ? u.data() : {};
+      return { uid: m.id, name: m.data().name || x.name || '?', progress: x.progress || {}, xp: x.xp || 0, days: x.days || [], frozen: x.frozen || [] };
+    }));
+  };
 
   // ---------- Форум ----------
   const LOCAL_KEY = 'forum';

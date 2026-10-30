@@ -1333,7 +1333,7 @@ fmt.Println("Workers:", workers)
 fmt.Println("Sum of squares:", sum)`),
         hint: L('1 + 4 + 9 + 16 + 25 = 55.', '1 + 4 + 9 + 16 + 25 = 55.', '1 + 4 + 9 + 16 + 25 = 55.'),
         expected: 'Workers: 5\nSum of squares: 55',
-        must: /go\s+func[\s\S]*chan/
+        must: /^(?=[\s\S]*\bgo\s+func)(?=[\s\S]*\bchan\b)/
       },
       quiz: { q: L('Що робить <code>v := &lt;-ch</code>?', 'Что делает <code>v := &lt;-ch</code>?', 'What does <code>v := &lt;-ch</code> do?'), options: [L('надсилає v у канал', 'отправляет v в канал', 'sends v'), L('отримує значення з каналу', 'получает значение из канала', 'receives a value from the channel'), L('закриває канал', 'закрывает канал', 'closes the channel')], answer: 1, explain: L('Стрілка «витягує» значення з каналу.', 'Стрелка «вытягивает» значение из канала.', 'The arrow pulls a value out.') },
       ref: [{ code: 'go f()', d: L('запустити горутину', 'запустить горутину', 'start a goroutine') }, { code: 'ch := make(chan int); ch <- 1; v := <-ch', d: L('канали', 'каналы', 'channels') }, { code: 'sync.WaitGroup', d: L('дочекатися групи', 'дождаться группы', 'wait for a group') }]

@@ -2,7 +2,9 @@
 
 Інтерактивні курси з 11 мов програмування для дітей, підлітків і всіх охочих. Інтерфейс і уроки — українською, російською та англійською.
 
-## Курси (221 крок)
+Сайт: https://furtex-xq.github.io/codry/
+
+## Курси (243 кроки)
 
 | Курс | Кроків | Де виконується код |
 |---|---|---|
@@ -11,12 +13,14 @@
 | HTML | 21 | у браузері, живий перегляд |
 | CSS | 21 | у браузері, живий перегляд |
 | SQL | 18 | у браузері (sql.js / SQLite) |
-| Lua | 14 | сервер Wandbox (Lua 5.4) |
-| Roblox (Luau) | 20 | Wandbox + симулятор Roblox API |
-| Java | 17 | Wandbox (OpenJDK 21) |
-| C++ | 14 | Wandbox (GCC 13) |
-| C# | 16 | Wandbox (Mono) |
-| Go | 16 | Wandbox (Go 1.23) |
+| Lua | 21 | у браузері (Fengari) |
+| Roblox (Luau) | 20 | у браузері (Fengari + симулятор Roblox API) |
+| Java | 25 | сервер (OpenJDK 21) |
+| C++ | 21 | сервер (GCC 13) |
+| C# | 16 | сервер (Mono / .NET) |
+| Go | 16 | сервер (Go 1.23) |
+
+Java, C++, C# і Go компілюються на сервері Wandbox. Якщо він недоступний, код автоматично надсилається на запасний сервер Compiler Explorer (godbolt.org). Якщо бібліотека Fengari не завантажилась, Lua теж виконується на сервері.
 
 Кожен крок: теорія, «чому саме так», типові помилки, 3–4 приклади, завдання з автоперевіркою, покрокова інструкція, підказка, розв’язок, міні-тест і довідник. Кроки відкриваються суворо по черзі. У кожному курсі є фінальні проєкти.
 
@@ -27,8 +31,31 @@
 - 10 ліг з тижневим рейтингом, 34 досягнення, магазин
 - Маскот Кодрик з мальованими емоціями, анімації, звуки, озвучка уроків
 - Форум, профіль, сертифікати, пісочниця, повноекранний редактор
+- **Режим учителя**: класи, завдання з будь-якого курсу з терміном, таблиця прогресу учнів, експорт у CSV
+- **Мій клас** для учнів: завдання від учителя з прогресом і кнопкою «Продовжити»
+- Сторінка «Підтримати» з посиланнями й криптогаманцями (з QR-кодами)
 - Темна тема за замовчуванням (є світла)
-- Без реєстрації все зберігається в браузері; з Firebase — вхід через Google і спільний рейтинг/форум
+- Без реєстрації все зберігається в браузері; з Firebase — вхід через Google, спільний рейтинг, форум і класи
+
+## Режим учителя
+
+**Без Firebase (працює одразу):**
+1. Учитель: **Ще → Для вчителя** → створює клас і додає завдання (курс, кроки «з — по», термін).
+2. Копіює посилання-запрошення й надсилає учням.
+3. Учень відкриває посилання — клас з’являється в **Ще → Мій клас**.
+4. Учень натискає **«Звіт для вчителя»** і надсилає код учителю (у месенджер чи пошту).
+5. Учитель вставляє коди в таблицю класу — бачить прогрес кожного учня.
+
+**З Firebase:** учні входять в акаунт, вводять 6-значний код класу, і прогрес оновлюється в таблиці вчителя автоматично.
+
+## Донати й «Про нас»
+
+Усе налаштовується у файлі `js/site-config.js` — без програмування:
+- `CODRY_DONATE.links` — посилання (Monobank, Buy Me a Coffee, PayPal…)
+- `CODRY_DONATE.crypto` — монета, мережа й адреса гаманця (QR-код створиться сам)
+- `CODRY_ABOUT` — опис проєкту, команда, контакти
+
+Порожні поля на сайті не показуються.
 
 ## Запуск на своєму комп’ютері
 
@@ -38,11 +65,11 @@ node server.js
 
 Потім відкрий http://localhost:5173.
 
-## Підключення Firebase (вхід через Google, спільний рейтинг і форум)
+## Підключення Firebase (вхід через Google, спільний рейтинг, форум і класи)
 
 1. Створи проєкт на https://console.firebase.google.com (безкоштовний план Spark).
 2. **Authentication → Sign-in method** — увімкни Google (і, за бажанням, Email/Password).
-3. **Authentication → Settings → Authorized domains** — додай домен сайту (наприклад `твій-логін.github.io`).
+3. **Authentication → Settings → Authorized domains** — додай `furtex-xq.github.io`.
 4. **Firestore Database** — створи базу і встав правила:
 
 ```
@@ -56,9 +83,20 @@ service cloud.firestore {
     match /topics/{id} {
       allow read: if true;
       allow create: if request.auth != null;
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'replyCount']);
       match /replies/{rid} {
         allow read: if true;
         allow create: if request.auth != null;
+      }
+    }
+    match /classes/{code} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.teacher == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.teacher == request.auth.uid;
+      match /members/{uid} {
+        allow read: if true;
+        allow write: if request.auth != null && request.auth.uid == uid;
       }
     }
   }
@@ -70,12 +108,9 @@ service cloud.firestore {
 
 ## Публікація на GitHub Pages
 
-1. Створи репозиторій на GitHub (наприклад `codry`).
-2. Завантаж туди всі файли проєкту (папки `css`, `js`, файл `index.html` тощо).
-3. **Settings → Pages → Source: Deploy from a branch**, гілка `main`, папка `/ (root)`.
-4. Через хвилину сайт буде доступний за адресою `https://твій-логін.github.io/codry/`.
+Сайт уже опубліковано з репозиторію `furtex-xq/codry` (гілка `main`, папка `/`). Щоб оновити — зроби коміт і `git push`; GitHub Pages перебудує сайт за хвилину.
 
-Сайт повністю статичний — сервер не потрібен. `server.js` потрібен лише для локального запуску.
+Файл `.nojekyll` обов’язковий: без нього GitHub Pages сховає `js/courses/_courses.js`.
 
 ## Перевірка уроків
 
@@ -83,10 +118,11 @@ service cloud.firestore {
 node tools/validate.js
 ```
 
-Перевіряє структуру всіх курсів (три мови, приклади, тести) і запускає розв’язки JavaScript. З прапорцем `--run` ще й запускає еталонні розв’язки Python/Java/C++/C#/Go/Lua/Luau через Wandbox:
+Перевіряє структуру всіх курсів (три мови, приклади, тести) і запускає розв’язки JavaScript. З прапорцем `--run` ще й запускає еталонні розв’язки через Wandbox, а з `--godbolt` — через Compiler Explorer. `--examples` додатково запускає всі приклади:
 
 ```bash
 node tools/validate.js go --run
+node tools/validate.js java --run --godbolt --examples
 ```
 
 HTML, CSS і SQL перевіряються в браузері на сторінці `#/dev/html`, `#/dev/css`, `#/dev/sql`.
@@ -95,13 +131,14 @@ HTML, CSS і SQL перевіряються в браузері на сторі�
 
 - `index.html` — оболонка сторінки
 - `css/style.css` — увесь дизайн
-- `js/core.js` — стан, збереження, маршрутизація
+- `js/core.js` — стан, збереження, реєстр курсів
 - `js/i18n.js` — тексти інтерфейсу UA / RU / EN
-- `js/courses/*.js` — уроки (`_courses.js` — список курсів)
+- `js/courses/*.js` — уроки (`_courses.js` — список курсів, `*-2.js` — другі частини курсів)
 - `js/daily-problems.js` — задачі дня
-- `js/runners.js` — запуск коду (включно з симулятором Roblox)
+- `js/runners.js` — запуск коду (Fengari, Wandbox, Compiler Explorer, симулятор Roblox)
 - `js/game.js` — XP, ліги, квести, досягнення, магазин
-- `js/cloud.js`, `js/firebase-config.js` — вхід і хмара
+- `js/cloud.js`, `js/firebase-config.js` — вхід, хмара, класи
+- `js/site-config.js` — донати і «Про нас»
 - `js/mascot.js`, `js/fx.js`, `js/icons.js` — маскот, анімації, іконки
-- `js/pages/*.js` — сторінки сайту
+- `js/pages/*.js` — сторінки сайту (`teacher.js` — режим учителя, `support.js` — донати й «Про нас»)
 - `tools/validate.js` — перевірка курсів
