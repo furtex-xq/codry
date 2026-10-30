@@ -66,18 +66,15 @@
       db = firebase.firestore();
       auth.onAuthStateChanged(async (u) => {
         cloud.user = u;
+        cloud.status = null;
+        if (unwatch) { unwatch(); unwatch = null; }
         if (u) {
-          try {
-            const doc = await db.collection('users').doc(u.uid).get();
-            if (doc.exists) merge(doc.data());
-            if (!S.profile.name && u.displayName) S.profile.name = u.displayName;
-            await push();
-            await refreshBoard();
-          } catch (e) { console.warn('cloud sync', e); }
+          try { await ensureAccount(u); } catch (e) { console.warn('account', e); cloud.status = 'error'; }
+          if (cloud.status === 'approved') await startSync(u);
         } else cloud.board = null;
         C.emit('auth', u);
       });
-      C.on('saved', C.debounce(() => { if (cloud.user) push(); }, 4000));
+      C.on('saved', C.debounce(() => { if (cloud.active()) push(); }, 4000));
     } catch (e) {
       console.warn('Firebase init failed', e);
       cloud.enabled = false;
@@ -85,10 +82,67 @@
     cloud.ready = true;
   };
 
-  async function push() { if (cloud.user) await db.collection('users').doc(cloud.user.uid).set(snapshot(), { merge: true }); }
+  // ---------- Реєстрація з підтвердженням ----------
+  // accounts/{uid}: { name, email, status: 'pending' | 'approved' | 'rejected', at, provider }
+  // site/config: { registrationOpen: true | false }
+  // Хмарні функції (синхронізація, рейтинг, форум, галерея, класи, турніри) — лише для підтверджених.
+  let unwatch = null;
+  const ADMINS = () => window.CODRY_ADMINS || [];
+  cloud.isAdmin = () => !!(cloud.user && ADMINS().includes(cloud.user.uid));
+  cloud.active = () => !!(cfg && cloud.user && cloud.status === 'approved');
+
+  async function ensureAccount(u) {
+    const ref = db.collection('accounts').doc(u.uid);
+    let doc = await ref.get();
+    if (!doc.exists) {
+      const admin = ADMINS().includes(u.uid);
+      if (!admin) {
+        const conf = await db.collection('site').doc('config').get().catch(() => null);
+        if (conf && conf.exists && conf.data().registrationOpen === false) { cloud.status = 'closed'; return; }
+      }
+      await ref.set({
+        name: S.profile.name || u.displayName || '', email: u.email || '', status: admin ? 'approved' : 'pending',
+        at: Date.now(), provider: (u.providerData[0] && u.providerData[0].providerId) || 'password'
+      });
+      doc = await ref.get();
+    }
+    cloud.status = doc.data().status;
+    // Власник сайту, доданий в адміни вже після першого входу, підтверджує себе сам.
+    if (cloud.status !== 'approved' && ADMINS().includes(u.uid)) { await ref.update({ status: 'approved' }); cloud.status = 'approved'; }
+    // Стежимо за заявкою: щойно адмін підтвердить — вмикаємо хмару без перезавантаження.
+    unwatch = ref.onSnapshot(async (snap) => {
+      if (!snap.exists) return;
+      const was = cloud.status;
+      cloud.status = snap.data().status;
+      if (was !== 'approved' && cloud.status === 'approved') { await startSync(u); C.emit('approved'); }
+      if (was !== cloud.status) C.emit('auth', u);
+    }, () => {});
+  }
+  async function startSync(u) {
+    try {
+      const doc = await db.collection('users').doc(u.uid).get();
+      if (doc.exists) merge(doc.data());
+      if (!S.profile.name && u.displayName) S.profile.name = u.displayName;
+      await push();
+      await refreshBoard();
+    } catch (e) { console.warn('cloud sync', e); }
+  }
+  // Повторна заявка, якщо реєстрацію закрили, а потім відкрили знову.
+  cloud.retryAccount = async () => { if (cloud.user) { await ensureAccount(cloud.user); if (cloud.status === 'approved') await startSync(cloud.user); C.emit('auth', cloud.user); } };
+
+  // Для адміна
+  cloud.listAccounts = async () => {
+    const r = await db.collection('accounts').orderBy('at', 'desc').limit(300).get();
+    return r.docs.map((d) => Object.assign({ uid: d.id }, d.data()));
+  };
+  cloud.setAccountStatus = (uid, status) => db.collection('accounts').doc(uid).update({ status, decided: Date.now() });
+  cloud.getSiteConfig = async () => { const d = await db.collection('site').doc('config').get(); return d.exists ? d.data() : { registrationOpen: true }; };
+  cloud.setRegistrationOpen = (open) => db.collection('site').doc('config').set({ registrationOpen: !!open }, { merge: true });
+
+  async function push() { if (cloud.active()) await db.collection('users').doc(cloud.user.uid).set(snapshot(), { merge: true }); }
 
   async function refreshBoard() {
-    if (!cloud.user) return;
+    if (!cloud.active()) return;
     const q = await db.collection('users').where('week', '==', C.weekKey()).where('tier', '==', S.league.tier).orderBy('weekXP', 'desc').limit(30).get();
     cloud.board = q.docs.map((d) => {
       const x = d.data();
@@ -106,7 +160,7 @@
   // ---------- Класи (режим учителя) ----------
   // classes/{code}: { name, teacher (uid), teacherName, assignments, updated }
   // classes/{code}/members/{uid}: { name, at }
-  cloud.classesShared = () => !!(cfg && cloud.user);
+  cloud.classesShared = () => cloud.active();
   cloud.saveClass = async (cls) => {
     await db.collection('classes').doc(cls.code).set({
       name: cls.name, teacher: cloud.user.uid, teacherName: S.profile.name || cloud.user.displayName || '',
@@ -132,7 +186,7 @@
 
   // ---------- Тижневі турніри ----------
   // tournaments/{week}/entries/{uid}: { name, score, solved, color, at }
-  cloud.tourneyShared = () => !!(cfg && cloud.user);
+  cloud.tourneyShared = () => cloud.active();
   cloud.saveTourney = (week, entry) => db.collection('tournaments').doc(week).collection('entries').doc(cloud.user.uid)
     .set(Object.assign({ name: S.profile.name || cloud.user.displayName || '?', color: S.equip.color, at: Date.now() }, entry));
   cloud.tourneyBoard = async (week) => {
@@ -149,7 +203,7 @@
   };
 
   // ---------- Галерея робіт ----------
-  cloud.galleryShared = () => !!(cfg && cloud.user);
+  cloud.galleryShared = () => cloud.active();
   cloud.listGallery = async () => {
     const r = await db.collection('gallery').orderBy('at', 'desc').limit(60).get();
     return r.docs.map((d) => Object.assign({ id: d.id }, d.data()));
@@ -166,7 +220,7 @@
   const localTopics = () => C.LS.get(LOCAL_KEY, []);
   const author = () => ({ name: S.profile.name || (cloud.user && cloud.user.displayName) || '?', color: S.equip.color, acc: S.equip.acc, uid: cloud.user ? cloud.user.uid : 'local' });
 
-  cloud.forumShared = () => !!(cfg && cloud.user);
+  cloud.forumShared = () => cloud.active();
   cloud.listTopics = async (cat) => {
     if (cloud.forumShared()) {
       let q = db.collection('topics').orderBy('at', 'desc').limit(50);

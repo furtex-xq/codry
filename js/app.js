@@ -172,7 +172,9 @@
       <a href="#/pet">${C.icon('heart', 18)} ${t('nav_pet')}</a>
       <a href="#/achievements">${C.icon('medal', 18)} ${t('nav_achievements')}</a>
       <a href="#/shop">${C.icon('shop', 18)} ${t('nav_shop')}</a>
-      ${u ? `<button id="logoutBtn">${C.icon('logout', 18)} ${t('nav_logout')}</button>` : `<a href="#/login">${C.icon('key', 18)} ${t('nav_login')}</a>`}`;
+      ${u && C.cloud.isAdmin && C.cloud.isAdmin() ? `<a href="#/admin">${C.icon('shield', 18)} ${tr({ uk: 'Адмін: заявки', ru: 'Админ: заявки', en: 'Admin: sign-ups' })}</a>` : ''}
+      ${u && C.cloud.status && C.cloud.status !== 'approved' ? `<a href="#/account" class="am-pending">${C.icon('clock', 18)} ${tr({ uk: 'Заявка на перевірці', ru: 'Заявка на проверке', en: 'Request pending' })}</a>` : ''}
+      ${u ? `<button id="logoutBtn">${C.icon('logout', 18)} ${t('nav_logout')}</button>` : `<a href="#/login">${C.icon('key', 18)} ${t('nav_login')}</a><a href="#/login/register">${C.icon('user', 18)} ${tr({ uk: 'Реєстрація', ru: 'Регистрация', en: 'Sign up' })}</a>`}`;
     const lo = document.getElementById('logoutBtn');
     if (lo) lo.onclick = () => C.cloud.signOut();
   }
@@ -228,7 +230,7 @@
     document.body.dataset.page = page || 'home';
     renderHeader();
     const P = C.pages;
-    const map = { '': P.home, dev: P.dev, courses: P.courses, course: P.course, learn: P.learn, daily: P.daily, league: P.league, forum: P.forum, playground: P.playground, reference: P.reference, profile: P.profile, achievements: P.achievements, shop: P.shop, about: P.about, login: P.login, class: P.class, teacher: P.teacher, join: P.join, donate: P.donate, boss: P.boss, arcade: P.arcade, battle: P.battle, pet: P.pet, gallery: P.gallery, tournament: P.tournament };
+    const map = { '': P.home, dev: P.dev, courses: P.courses, course: P.course, learn: P.learn, daily: P.daily, league: P.league, forum: P.forum, playground: P.playground, reference: P.reference, profile: P.profile, achievements: P.achievements, shop: P.shop, about: P.about, login: P.login, class: P.class, teacher: P.teacher, join: P.join, donate: P.donate, boss: P.boss, arcade: P.arcade, battle: P.battle, pet: P.pet, gallery: P.gallery, tournament: P.tournament, account: P.account, admin: P.admin };
     const fn = map[page || ''];
     app.classList.remove('page-in'); void app.offsetWidth; app.classList.add('page-in');
     if (fn) fn(a, b); else C.notFound();

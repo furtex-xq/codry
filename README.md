@@ -73,6 +73,23 @@ node server.js
 
 Потім відкрий http://localhost:5173.
 
+## Реєстрація з підтвердженням
+
+Щоб користувачів не стало забагато одразу, кожна реєстрація потребує підтвердження адміністратора:
+
+1. Учень реєструється (Google або email + пароль) — створюється заявка зі статусом «очікує».
+2. Поки заявку не підтверджено, він вчиться як раніше (прогрес у браузері), але хмарні функції вимкнені: синхронізація, рейтинг, форум, галерея, класи, турніри. Це захищено правилами Firestore, тож обійти з браузера не можна.
+3. Адміністратор відкриває **меню аватара → Адмін: заявки** і натискає «Підтвердити» або «Відхилити».
+4. Щойно заявку підтверджено, в учня все вмикається саме, без перезавантаження.
+
+На сторінці адміна є кнопка **«Закрити реєстрацію»** — нові заявки взагалі перестануть прийматися.
+
+**Як стати адміністратором (один раз):**
+1. Підключи Firebase (розділ нижче), зайди на сайт і зареєструйся.
+2. На сторінці «Заявка на перевірці» розгорни «Я власник сайту» і скопіюй UID.
+3. Впиши його в `js/firebase-config.js`: `window.CODRY_ADMINS = ['твій_UID'];`
+4. І в правила Firestore замість `ВАШ_UID`. Після цього твій акаунт підтвердиться автоматично.
+
 ## Підключення Firebase (вхід через Google, спільний рейтинг, форум і класи)
 
 1. Створи проєкт на https://console.firebase.google.com (безкоштовний план Spark).
@@ -84,40 +101,64 @@ node server.js
 rules_version = '2';
 service cloud.firestore {
   match /databases/{db}/documents {
+    // Впиши сюди свій UID (його показує сторінка «Заявка на перевірці»)
+    function isAdmin() { return request.auth != null && request.auth.uid in ['ВАШ_UID']; }
+    function approved() {
+      return request.auth != null && (isAdmin()
+        || get(/databases/$(db)/documents/accounts/$(request.auth.uid)).data.status == 'approved');
+    }
+    function regOpen() {
+      return !exists(/databases/$(db)/documents/site/config)
+        || get(/databases/$(db)/documents/site/config).data.registrationOpen != false;
+    }
+
+    // Заявки на реєстрацію
+    match /accounts/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow create: if request.auth != null && request.auth.uid == uid
+        && (request.resource.data.status == 'pending' && regOpen()
+            || request.resource.data.status == 'approved' && isAdmin());
+      allow update, delete: if isAdmin();
+    }
+    match /site/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /users/{uid} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null && request.auth.uid == uid && approved();
     }
     match /topics/{id} {
       allow read: if true;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null
+      allow create: if approved();
+      allow update: if approved()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'replyCount']);
       match /replies/{rid} {
         allow read: if true;
-        allow create: if request.auth != null;
+        allow create: if approved();
       }
     }
     match /classes/{code} {
       allow read: if true;
-      allow create: if request.auth != null && request.resource.data.teacher == request.auth.uid;
-      allow update, delete: if request.auth != null && resource.data.teacher == request.auth.uid;
+      allow create: if approved() && request.resource.data.teacher == request.auth.uid;
+      allow update, delete: if approved() && resource.data.teacher == request.auth.uid;
       match /members/{uid} {
         allow read: if true;
-        allow write: if request.auth != null && request.auth.uid == uid;
+        allow write: if approved() && request.auth.uid == uid;
       }
     }
     match /gallery/{id} {
       allow read: if true;
-      allow create: if request.auth != null && request.resource.data.author.uid == request.auth.uid
+      allow create: if approved() && request.resource.data.author.uid == request.auth.uid
         && request.resource.data.code.size() < 20001;
-      allow update: if request.auth != null
+      allow update: if approved()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']);
-      allow delete: if request.auth != null && resource.data.author.uid == request.auth.uid;
+      allow delete: if approved() && (resource.data.author.uid == request.auth.uid || isAdmin());
     }
     match /tournaments/{week}/entries/{uid} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == uid;
+      allow write: if approved() && request.auth.uid == uid;
     }
   }
 }

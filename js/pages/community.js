@@ -146,31 +146,7 @@
   };
 
   // ================= Вхід =================
-  C.pages.login = () => {
-    const on = C.cloud.enabled;
-    C.app.innerHTML = `<div class="page narrow center-col">
-      <div class="login-card" data-reveal>
-        ${C.mascot({ size: 120, mood: 'wink', anim: 'float' })}
-        <h1>${t('login_title')}</h1>
-        <p class="muted">${t('login_sub')}</p>
-        ${on ? `
-          <button class="btn google big block" id="gBtn">${C.icon('google', 20)} ${t('login_google')}</button>
-          <div class="or"><span>${t('login_or')}</span></div>
-          <label class="field"><input id="lEmail" type="email" autocomplete="email" placeholder="${t('login_email')}"></label>
-          <label class="field"><input id="lPass" type="password" autocomplete="current-password" placeholder="${t('login_password')}" minlength="6"></label>
-          <div class="row-center"><button class="btn primary" id="lIn">${t('login_btn')}</button><button class="btn ghost" id="lUp">${t('register_btn')}</button></div>
-        ` : `<div class="notice">${C.icon('info', 18)} ${t('login_off')}</div>`}
-        <a class="btn ghost block" href="#/courses">${t('login_local')}</a>
-      </div>
-    </div>`;
-    if (!on) return;
-    const err = (e) => fx.toast(t('login_err', { e: esc(e.message || e) }), 'bad', 'info');
-    const okGo = () => { location.hash = '#/profile'; };
-    document.getElementById('gBtn').onclick = () => C.cloud.signInGoogle().then(okGo, err);
-    const ep = () => [document.getElementById('lEmail').value.trim(), document.getElementById('lPass').value];
-    document.getElementById('lIn').onclick = () => C.cloud.signInEmail(...ep()).then(okGo, err);
-    document.getElementById('lUp').onclick = () => C.cloud.register(...ep()).then(okGo, err);
-  };
+  // Вхід і реєстрація — у js/pages/account.js
 
   // ================= Про нас =================
   C.pages.about = () => {

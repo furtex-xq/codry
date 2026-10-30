@@ -952,6 +952,23 @@ body.modal-open { overflow: hidden; }
 .trophy-row { display: flex; gap: 16px; flex-wrap: wrap; }
 .trophy-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 
+/* ============ Реєстрація з підтвердженням ============ */
+.auth-seg { display: flex; width: 100%; margin: 6px 0 14px; }
+.auth-seg a { flex: 1; text-align: center; padding: 8px 12px; border-radius: 9px; font-weight: 700; color: var(--muted); }
+.auth-seg a.active { background: var(--primary); color: #fff; }
+.check { display: flex; gap: 10px; align-items: flex-start; text-align: left; font-size: .9rem; margin: 2px 0 14px; cursor: pointer; }
+.check input { margin-top: 3px; accent-color: var(--primary); width: 18px; height: 18px; flex: none; }
+.pending-card p { max-width: 460px; }
+.pending-dots { display: flex; gap: 8px; justify-content: center; margin: 4px 0 16px; }
+.pending-dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--primary); animation: pendDot 1.2s ease-in-out infinite; }
+.pending-dots i:nth-child(2) { animation-delay: .2s; } .pending-dots i:nth-child(3) { animation-delay: .4s; }
+@keyframes pendDot { 0%, 80%, 100% { transform: scale(.5); opacity: .4; } 40% { transform: scale(1); opacity: 1; } }
+.uid-box { margin-top: 18px; text-align: left; width: 100%; }
+.uid-box summary { cursor: pointer; color: var(--muted); font-size: .86rem; }
+.am-pending { color: var(--warn) !important; }
+.admin-table td { text-align: left; }
+.ad-actions { display: flex; gap: 6px; justify-content: flex-end; }
+
 /* ============ Підтримка (донати) ============ */
 .section-title.left { text-align: left; font-size: 1.4rem; margin: 26px 0 12px; }
 .donate-links { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 16px; }
