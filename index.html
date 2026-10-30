@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="uk" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Codry — безкоштовне навчання програмуванню</title>
+  <meta name="description" content="Вчися програмувати безкоштовно: Python, JavaScript, HTML, CSS, SQL, Java, C++, C#, Go, Lua, Roblox. Інтерактивні кроки, приклади, завдання з перевіркою — українською, російською та англійською.">
+  <meta name="theme-color" content="#070b18">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%233b82f6'/%3E%3Ctext x='32' y='44' font-size='34' text-anchor='middle' fill='white' font-family='monospace' font-weight='bold'%3E%7B%7D%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="bg-blobs" aria-hidden="true"><i></i><i></i><i></i></div>
+  <header class="topbar">
+    <a class="logo" href="#/"><span class="logo-mark">{ }</span><span class="logo-text">Codry</span></a>
+    <nav class="nav" id="nav"></nav>
+    <div class="topbar-right">
+      <a class="stat" id="streakStat" href="#/daily"></a>
+      <a class="stat" id="gemStat" href="#/shop"></a>
+      <a class="stat" id="xpStat" href="#/league"></a>
+      <select id="langSelect" class="lang-select" aria-label="Language"></select>
+      <button class="icon-btn" id="themeBtn" aria-label="Theme"></button>
+      <div class="avatar-wrap">
+        <button class="avatar-btn" id="avatarBtn" aria-label="Profile"></button>
+        <div class="avatar-menu" id="avatarMenu"></div>
+      </div>
+      <button class="icon-btn burger" id="burgerBtn" aria-label="Menu">☰</button>
+    </div>
+  </header>
+
+  <main id="app"></main>
+
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <div id="modal" class="modal" hidden></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/go/go.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/lua/lua.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/runmode/runmode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closetag.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
+
+  <script src="js/i18n.js"></script>
+  <script src="js/core.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/mascot.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/fx.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/cloud.js"></script>
+  <script src="js/runners.js"></script>
+
+  <!-- Курси -->
+  <script src="js/courses/_courses.js"></script>
+  <script src="js/courses/python-1.js"></script>
+  <script src="js/courses/python-2.js"></script>
+  <script src="js/courses/python-3.js"></script>
+  <script src="js/courses/javascript-1.js"></script>
+  <script src="js/courses/javascript-2.js"></script>
+  <script src="js/courses/javascript-3.js"></script>
+  <script src="js/courses/html-1.js"></script>
+  <script src="js/courses/html-2.js"></script>
+  <script src="js/courses/css-1.js"></script>
+  <script src="js/courses/css-2.js"></script>
+  <script src="js/courses/sql.js"></script>
+  <script src="js/courses/lua.js"></script>
+  <script src="js/courses/luau-1.js"></script>
+  <script src="js/courses/luau-2.js"></script>
+  <script src="js/courses/java.js"></script>
+  <script src="js/courses/cpp.js"></script>
+  <script src="js/courses/csharp.js"></script>
+  <script src="js/courses/go.js"></script>
+  <script src="js/daily-problems.js"></script>
+
+  <script src="js/app.js"></script>
+  <script src="js/pages/home.js"></script>
+  <script src="js/pages/learn.js"></script>
+  <script src="js/pages/game.js"></script>
+  <script src="js/pages/community.js"></script>
+  <script src="js/pages/tools.js"></script>
+  <script>Codry.boot();</script>
+</body>
+</html>
