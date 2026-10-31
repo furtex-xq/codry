@@ -21,4 +21,4 @@ window.CODRY_FIREBASE = {
 // UID адміністраторів, які підтверджують реєстрації (сторінка «Адмін»).
 // Як дізнатися свій UID: увійди на сайт — на сторінці «Заявка на перевірці» буде кнопка «Скопіювати UID».
 // Той самий UID треба вписати і в правила Firestore (див. README, функція isAdmin).
-window.CODRY_ADMINS = [];
+window.CODRY_ADMINS = ['ttxaY824buY1vTaHkaYL8thCder2'];
