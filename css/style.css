@@ -1129,3 +1129,10 @@ body.modal-open { overflow: hidden; }
   .cert { position: fixed; left: 0; top: 0; width: 100%; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .modal-backdrop, .bg-blobs { display: none; }
 }
+
+/* Відео на головній */
+.video-sec { padding-top: 8px; }
+.video-frame { max-width: 900px; margin: 0 auto; border-radius: 18px; overflow: hidden; background: #000; border: 1px solid var(--border, rgba(255,255,255,.08)); box-shadow: 0 18px 50px rgba(0,0,0,.35); }
+.video-frame video { display: block; width: 100%; height: auto; aspect-ratio: 1280 / 854; background: #000; }
+:root[data-theme="light"] .video-frame { box-shadow: 0 14px 36px rgba(15,23,42,.15); }
+@media (max-width: 600px) { .video-frame { border-radius: 12px; } }

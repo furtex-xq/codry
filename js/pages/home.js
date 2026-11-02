@@ -88,6 +88,10 @@
           <div class="float-chip c3">${C.icon('bolt', 18)} +20 XP</div>
         </div>
       </section>
+      <section class="section video-sec">
+        <h2 class="section-title" data-reveal>${t('video_title')}</h2>
+        <div class="video-frame" data-reveal><video controls preload="none" playsinline poster="media/intro-poster.jpg" src="media/intro.mp4"></video></div>
+      </section>
       ${C.petWidget ? `<section class="section pet-sec">${C.petWidget()}</section>` : ""}
       <div class="marquee"><div class="marquee-track">${[...C.courses, ...C.courses, ...C.courses].map((c) => `<a href="#/course/${c.id}">${C.courseBadge(c, 30)} ${c.name}</a>`).join('')}</div></div>
       <section class="section" id="courses">
